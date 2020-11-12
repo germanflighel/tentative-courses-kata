@@ -45,6 +45,10 @@ public class Student {
     }
 
     public Boolean canEnrollFor(Course course) {
-        return course.acceptsNewStudent() && course.hasLevel(this.level) && course.hasModality(this.modality);
+        return course.acceptsNewStudent() && course.hasLevel(this.level) && course.hasModality(this.modality) && !course.hasAStudent(this);
+    }
+
+    public Boolean isAvailableFor(Schedule schedule) {
+        return availableTimes.stream().anyMatch(anAvailableTime -> anAvailableTime.accepts(schedule));
     }
 }

@@ -1,8 +1,11 @@
 package domain;
 
+import java.time.DayOfWeek;
 import java.util.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class CourseGenerator {
 
@@ -19,45 +22,48 @@ public class CourseGenerator {
         List<Course> courses = new ArrayList<>();
 
         /**
-         * 1. Aparear horarios de profesores - Buscar un profesor con el horario permitido
-         * 2. Segun la modalidad y el nivel, buscar mas alumnos que se puedan sumar al curso
-         * 3. Repetir para cada nivel ?
+         * 1. Mapear todos los horarios posibles de los docentes
+         * 2.
          */
-        availableStudents.forEach(student -> {
+
+        List<Schedule> allPossibleSchedules = this.allPossibleSchedules();
+
+
+        List<CourseBuilder> possibleCourses = allPossibleSchedules.stream().map(
+                aSchedule -> new CourseBuilder(aSchedule, availableTeachers)
+        ).collect(Collectors.toList());
+
+        possibleCourses = possibleCourses.stream().map(possibleCourse -> possibleCourse.addPossibleStudents(availableStudents)).collect(Collectors.toList());
+//        return possibleCourses.stream().map(CourseBuilder::allPossibleStudentsCombinations).collect(Collectors.toList()).stream().flatMap(Collection::stream).collect(Collectors.toList());
+        List<CourseBuilder> courseBuilders = possibleCourses.stream().map(CourseBuilder::allPossibleStudentsCombinationsv2).collect(Collectors.toList()).stream().collect(Collectors.toList());
+        courses = courseBuilders.stream().map(CourseBuilder::buildPossibles).collect(Collectors.toList()).stream().flatMap(Collection::stream).collect(Collectors.toList());
+
+        return courses;
+
+        /*availableStudents.forEach(student -> {
             student.getAvailableTimes().forEach(availableTime -> {
                 List<Teacher> availableTeachers = this.availableTeachers.stream().filter(teacher -> teacher.isAvailableFor(availableTime)).collect(Collectors.toList());
                 availableTeachers.forEach(availableTeacher -> {
                     Course course = new Course(availableTeacher, availableTime, student.getLevel(), student.getModality());
                     course.enrollStudent(student);
                     for (Student aStudent : availableStudents) {
-                        if (aStudent != aStudent && aStudent.canEnrollFor(course)) {
+                        if (aStudent != student && aStudent.canEnrollFor(course)) {
                             course.enrollStudent(aStudent);
                         }
                     }
-                    if (course.isValid())
+                    if (courses.stream().noneMatch(anotherCourse -> anotherCourse.isTheSameAs(course)))
                         courses.add(course);
                 });
             });
         });
 
-        /*
-Set<Modality> modalities = new HashSet<Modality>(Arrays.asList(Modality.values()));
+        return courses;*/
+    }
 
-        List<Course> courses = new ArrayList<>();
-
-        modalities.forEach(modality -> {
-            Set<Level> levels = new HashSet<Level>(Arrays.asList(Level.values()));
-            levels.forEach(level -> {
-                availableTeachers.forEach(teacher -> {
-                    List<Student> studentsWithModalityAndLevel = availableStudents.stream()
-                            .filter(student -> student.acceptsModality(modality) && student.acceptsLevel(level))
-                            .collect(Collectors.toList());
-                    Course aCourse = new Course(teacher, studentsWithModalityAndLevel, null, level, modality);
-                    courses.add(aCourse);
-                });
-            });
-        });*/
-
-        return courses;
+    private List<Schedule> allPossibleSchedules() {
+        DayOfWeek[] dayOfWeeks = {DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY};
+        return new ArrayList<DayOfWeek>(Arrays.asList(dayOfWeeks))
+                .stream()
+                .flatMap(dayOfWeek -> IntStream.range(9, 19).boxed().map(time -> new Schedule(dayOfWeek, time))).collect(Collectors.toList());
     }
 }
