@@ -1,6 +1,8 @@
 package domain;
 
 import java.util.*;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 public class CourseGenerator {
 
@@ -23,22 +25,18 @@ public class CourseGenerator {
          */
         availableStudents.forEach(student -> {
             student.getAvailableTimes().forEach(availableTime -> {
-                Teacher availableTeacher = availableTeachers.stream().filter(teacher -> teacher.isAvailableFor(availableTime)).findFirst().orElse(null);
-                // TODO: Ver de agarrar todos los teachers para generar cursos de horario solapado
-                if (Objects.isNull(availableTeacher)) {
-                    return;
-                }
-                // TODO: skipear la iteracion si no hay profe para ese horario
-                Course course = new Course(availableTeacher, availableTime, student.getLevel(), student.getModality());
-                course.enrollStudent(student);
-                for (Student aStudent : availableStudents) {
-                    if (aStudent != aStudent && aStudent.canEnrollFor(course)) {
-                        course.enrollStudent(aStudent);
+                List<Teacher> availableTeachers = this.availableTeachers.stream().filter(teacher -> teacher.isAvailableFor(availableTime)).collect(Collectors.toList());
+                availableTeachers.forEach(availableTeacher -> {
+                    Course course = new Course(availableTeacher, availableTime, student.getLevel(), student.getModality());
+                    course.enrollStudent(student);
+                    for (Student aStudent : availableStudents) {
+                        if (aStudent != aStudent && aStudent.canEnrollFor(course)) {
+                            course.enrollStudent(aStudent);
+                        }
                     }
-                }
-
-                if (course.isValid())
-                    courses.add(course);
+                    if (course.isValid())
+                        courses.add(course);
+                });
             });
         });
 
